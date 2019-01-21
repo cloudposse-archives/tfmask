@@ -34,6 +34,14 @@ It's 100% Open Source and licensed under the [APACHE2](LICENSE).
 
 
 
+## Screenshots
+
+
+![terraform plan](https://user-images.githubusercontent.com/52489/51474936-c1003800-1d35-11e9-9e25-11245388a372.png)
+*Example of masking output from a `terraform plan` execution*
+![terraform apply](https://user-images.githubusercontent.com/52489/51475052-248a6580-1d36-11e9-9f55-5ad46bf77bcb.png)
+*Example of masking output from a `terraform apply` execution*
+
 
 ## Introduction
 
@@ -54,11 +62,14 @@ __NOTE__: `tfmask` will preserve the name of the nodes in the graph
 
 __NOTE__: The utility supports a number of configuration settings which can be passed via environment variables.
 
-| Environment Variable | Description                                  | Default    |
-|----------------------|----------------------------------------------|------------| 
-| `TFMASK_CHAR`        |  Character used to mask all output           | `*`        | 
-| `TFMASK_REGEX`       | Regular expression used to match graph nodes | [see code] | 
-  
+| Environment Variable     | Description                                    | Default    |
+|--------------------------|------------------------------------------------|------------| 
+| `TFMASK_CHAR`            |  Character used to mask all output             | `*`        | 
+| `TFMASK_VALUES_REGEX`    | Regular expression used to match values        | [see code] | 
+| `TFMASK_RESOURCES_REGEX` | Regular expression used to match resources     | [see code] |
+
+__IMPORTANT__: Pass `-no-color` to `terraform plan` and `terraform apply` for proper parsing
+
 The basic usage looks like this. We're going to run `terraform plan` and filter it through `tfmask`:
 
 ```sh
@@ -74,7 +85,7 @@ Example `.envrc`:
 ```sh
 # Export terraform environment
 export TFMASK_CHAR="#"
-export TFMASK_REGEX="(?i)^.*(secret|password|oauth|token|key).*$"
+export TFMASK_VALUES_REGEX="(?i)^.*(secret|password|oauth|token|key).*$"
 ```
 
 <details>
