@@ -6,7 +6,7 @@
 # tfmask [![Build Status](https://travis-ci.org/cloudposse/tfmask.svg?branch=master)](https://travis-ci.org/cloudposse/tfmask) [![Latest Release](https://img.shields.io/github/release/cloudposse/tfmask.svg)](https://github.com/cloudposse/tfmask/releases/latest) [![Slack Community](https://slack.cloudposse.com/badge.svg)](https://slack.cloudposse.com)
 
 
-Command line utility to mask sensitive output from a `transform plan`.
+Command line utility to mask sensitive output from a `transform plan` or `terraform apply`.
 
 
 ---
@@ -40,8 +40,8 @@ It's 100% Open Source and licensed under the [APACHE2](LICENSE).
 
 If you answer "yes" to any of these questions, then look no further!
 
-* Have you ever wished you could easily filter sensitive output from a `terraform plan`?
-* Do you use terraform providers that leak sensitive data to `stdout`?
+* Have you ever wished you could easily filter sensitive output from a `terraform plan` or `terraform apply`?
+* Do you use terraform providers that leak sensitive data to `stdout` (e.g. `terraform-github-provider`)?
 
 **Yes?** Great! Then this utility is for you.
 
@@ -103,10 +103,81 @@ export TFMASK_REGEX="(?i)^.*(secret|password|oauth|token|key).*$"
 make go/build
 ```
 
-### Use with Terraform Plan
+ ### Use with Terraform Plan
+
+ Many terraform providers unintentionally leak sensitive information when running `terraform plan`. **This is very bad.**
+
+<details>
+  <summary>Example of a Leaked Secret from a Terraform Plan</summary>
+
+  ```sh
+  An execution plan has been generated and is shown below.
+  Resource actions are indicated with the following symbols:
+    ~ update in-place
+
+  Terraform will perform the following actions:
+
+    ~ module.example.aws_codepipeline.source_build_deploy
+        stage.0.action.0.configuration.%:          "4" => "5"
+        stage.0.action.0.configuration.OAuthToken: "" => "efba05dbe9b94ba18ae3737a6d6de16eefba05dbe9b9"
+  Plan: 0 to add, 1 to change, 0 to destroy.
+  ```
+  __NOTE:__ This `OAuthToken` is just an example and not a valid token.
+</details>
+
+
+Using `tfmask`, the output from `terraform plan` will be masked like this:
 
 ```sh
 terraform plan | tfmask
+```
+<details>
+  <summary>Masked Terraform Plan Output</summary>
+
+  ```
+   An execution plan has been generated and is shown below.
+  Resource actions are indicated with the following symbols:
+    ~ update in-place
+
+  Terraform will perform the following actions:
+
+    ~ module.example.aws_codepipeline.source_build_deploy
+        stage.0.action.0.configuration.%:          "4" => "5"
+        stage.0.action.0.configuration.OAuthToken: "" => ********************************************"
+  Plan: 0 to add, 1 to change, 0 to destroy.
+  ```
+</details>
+
+### Use with Terraform Apply
+
+Many terraform providers unintentionally leak sensitive information when running `terraform apply`. **This is very bad.**
+
+<details>
+  <summary>Example of a Leaked Secret from a Terraform Apply</summary>
+
+  ```sh
+  terraform apply
+  module.example.aws_codepipeline.source_build_deploy: Modifying... (ID: example-codepipeline)
+    stage.0.action.0.configuration.%:          "4" => "5"
+    stage.0.action.0.configuration.OAuthToken: "" => "efba05dbe9b94ba18ae3737a6d6de16eefba05dbe9b9"
+  module.example.aws_codepipeline.source_build_deploy: Modifications complete after 1s (ID: example-codepipeline)
+
+  Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
+  ```
+
+  __NOTE:__ This `OAuthToken` is just an example and not a valid token.
+</details>
+
+Using `tfmask`, the output from `terraform apply` will be masked like this:
+
+```sh
+terraform apply | tfmask
+module.example.aws_codepipeline.source_build_deploy: Modifying... (ID: example-codepipeline)
+  stage.0.action.0.configuration.%:          "4" => "5"
+  stage.0.action.0.configuration.OAuthToken: "" => "********************************************"                                                 
+module.example.aws_codepipeline.source_build_deploy: Modifications complete after 1s (ID: example-codepipeline)
+
+Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
 ```
 
 

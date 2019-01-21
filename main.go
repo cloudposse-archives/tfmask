@@ -35,19 +35,21 @@ func main() {
 	var tfmaskRegex = getEnv("TFMASK_REGEX", "(?i)^.*(oauth|secret|token|password|key).*$")
 
 	// stage.0.action.0.configuration.OAuthToken: "" => "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-	reTfPlanLine := regexp.MustCompile("^ +([a-zA-Z0-9%._-]+): +\"(.*?)\" +=> +\"(.*?)\"")
+	reTfPlanLine := regexp.MustCompile("^( +)([a-zA-Z0-9%._-]+):( +)\"(.*?)\" +=> +\"(.*?)\"")
 	reTfSensitive := regexp.MustCompile(tfmaskRegex)
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := scanner.Text()
 		if reTfPlanLine.MatchString(line) {
 			match := reTfPlanLine.FindStringSubmatch(line)
-			property := match[1]
+			leadingWhitespace := match[1]
+			property := match[2]
+			trailingWhitespace := match[3]
 
 			if reTfSensitive.MatchString(property) {
-				oldValue := strings.Repeat(tfmaskChar, utf8.RuneCountInString(match[2]))
-				newValue := strings.Repeat(tfmaskChar, utf8.RuneCountInString(match[3]))
-				fmt.Printf("      %v: \"%v\" => \"%v\"\n", property, oldValue, newValue)
+				oldValue := strings.Repeat(tfmaskChar, utf8.RuneCountInString(match[4]))
+				newValue := strings.Repeat(tfmaskChar, utf8.RuneCountInString(match[5]))
+				fmt.Printf("%v%v:%v\"%v\" => \"%v\"\n", leadingWhitespace, property, trailingWhitespace, oldValue, newValue)
 			} else {
 				fmt.Println(line)
 			}
