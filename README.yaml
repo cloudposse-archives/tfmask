@@ -1,0 +1,126 @@
+---
+#
+# This is the canonical configuration for the `README.md`
+# Run `make readme` to rebuild the `README.md`
+#
+
+# Name of this project
+name: tfmask
+
+# Logo for this project
+#logo: docs/logo.png
+
+# License of this project
+license: "APACHE2"
+
+# Canonical GitHub repo
+github_repo: cloudposse/tfmask
+
+# Badges to display
+badges:
+  - name: "Build Status"
+    image: "https://travis-ci.org/cloudposse/tfmask.svg?branch=master"
+    url: "https://travis-ci.org/cloudposse/tfmask"
+  - name: "Latest Release"
+    image: "https://img.shields.io/github/release/cloudposse/tfmask.svg"
+    url: "https://github.com/cloudposse/tfmask/releases/latest"
+  - name: "Slack Community"
+    image: "https://slack.cloudposse.com/badge.svg"
+    url: "https://slack.cloudposse.com"
+
+# Short description of this project
+description: |-
+  Command line utility to mask sensitive output from a `transform plan`.
+
+introduction: |-
+
+  If you answer "yes" to any of these questions, then look no further!
+
+  * Have you ever wished you could easily filter sensitive output from a `terraform plan`?
+  * Do you use terraform providers that leak sensitive data to `stdout`?
+
+  **Yes?** Great! Then this utility is for you.
+
+  The `tfmask` utility will replace the "old value" and the "new value" with the masking character (e.g. `*`).
+    
+  __NOTE__: `tfmask` will preserve the name of the nodes in the graph
+
+# How to use this project
+usage: |-
+
+  __NOTE__: The utility supports a number of configuration settings which can be passed via environment variables.
+
+  | Environment Variable | Description                                  | Default    |
+  |----------------------|----------------------------------------------|------------| 
+  | `TFMASK_CHAR`        |  Character used to mask all output           | `*`        | 
+  | `TFMASK_REGEX`       | Regular expression used to match graph nodes | [see code] | 
+    
+  The basic usage looks like this. We're going to run `terraform plan` and filter it through `tfmask`:
+
+  ```sh
+  terraform plan | tfmask
+  ```
+
+  ### Direnv
+
+  You can use `tfmask` with [`direnv`](https://direnv.net/) to set the defaults.
+
+  Example `.envrc`:
+
+  ```sh
+  # Export terraform environment
+  export TFMASK_CHAR="#"
+  ex[prt TFMASK_REGEX="(?i)^.*(secret|password|oauth|token|key).*$"
+  ```
+
+  <details>
+    <summary>Example of Masked Output</summary>
+
+    ```sh
+    Terraform will perform the following actions:
+
+      ~ module.atlantis.module.web_app.module.ecs_codepipeline.aws_codepipeline.source_build_deploy
+          stage.0.action.0.configuration.%:          "4" => "5"
+          stage.0.action.0.configuration.OAuthToken: "" => "*******************************************"
+
+    Plan: 0 to add, 1 to change, 0 to destroy.
+    ```
+  </details>
+
+
+related:
+  - name: "Packages"
+    description: "Cloud Posse installer and distribution of native apps"
+    url: "https://github.com/cloudposse/packages"
+  - name: "build-harness"
+    description: "Collection of Makefiles to facilitate building Golang projects, Dockerfiles, Helm charts, and more"
+    url: "https://github.com/cloudposse/build-harness"
+  - name: "geodesic"
+    description: "Geodesic is the fastest way to get up and running with a rock solid, production grade cloud platform built on strictly Open Source tools."
+    url: "https://github.com/cloudposse/geodesic"
+  - name: "direnv"
+    description: "Unclutter your .profile with an environment switcher for the shell"
+    url: "https://direnv.net/"
+  - name: "tfenv"
+    description: "Transform environment variables for use with Terraform (e.g.  `HOSTNAME` ⇨ `TF_VAR_hostname`)"
+    url: "https://github.com/cloudposse/tfenv"
+
+examples: |-
+
+  ### Compiling the Binary
+
+  ```sh
+  make go/build
+  ```
+
+  ### Use with Terraform Plan
+
+  ```sh
+  terraform plan | tfmask
+  ```
+
+# Contributors to this project
+contributors:
+  - name: "Erik Osterman"
+    homepage: "https://github.com/osterman"
+    github: "osterman"
