@@ -35,7 +35,7 @@ func main() {
 	var tfmaskValuesRegex = getEnv("TFMASK_VALUES_REGEX", "(?i)^.*(oauth|secret|token|password|key|result).*$")
 
 	// Pattern representing sensitive resource
-	var tfmaskResourceRegex = getEnv("TFMASK_RESOURCE_REGEX", "(?i)^(random_id).*$")
+	var tfmaskResourceRegex = getEnv("TFMASK_RESOURCES_REGEX", "(?i)^(random_id).*$")
 
 	// stage.0.action.0.configuration.OAuthToken: "" => "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 	reTfPlanLine := regexp.MustCompile("^( +)([a-zA-Z0-9%._-]+):( +)([\"<])(.*?)([>\"]) +=> +([\"<])(.*?)([>\"])(.*)$")

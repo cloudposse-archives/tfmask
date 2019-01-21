@@ -62,7 +62,7 @@ usage: |-
 
   | Environment Variable     | Description                                    | Default    |
   |--------------------------|------------------------------------------------|------------| 
-  | `TFMASK_CHAR`            | Character used to mask all output             | `*`        | 
+  | `TFMASK_CHAR`            | Character used to mask all output              | `*`        |
   | `TFMASK_VALUES_REGEX`    | Regular expression used to match values        | [see code] | 
   | `TFMASK_RESOURCES_REGEX` | Regular expression used to match resources     | [see code] |
 
