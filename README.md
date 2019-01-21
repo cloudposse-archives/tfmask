@@ -131,8 +131,9 @@ Using `tfmask`, the output from `terraform plan` will be masked like this:
 ```sh
 terraform plan | tfmask
 ```
+
 <details>
-  <summary>Masked Terraform Plan Output</summary>
+  <summary>Example of Masked Terraform Plan Output</summary>
 
   ```
    An execution plan has been generated and is shown below.
@@ -172,13 +173,19 @@ Using `tfmask`, the output from `terraform apply` will be masked like this:
 
 ```sh
 terraform apply | tfmask
-module.example.aws_codepipeline.source_build_deploy: Modifying... (ID: example-codepipeline)
-  stage.0.action.0.configuration.%:          "4" => "5"
-  stage.0.action.0.configuration.OAuthToken: "" => "********************************************"                                                 
-module.example.aws_codepipeline.source_build_deploy: Modifications complete after 1s (ID: example-codepipeline)
-
-Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
 ```
+<details>
+  <summary>Example of Masked Terraform Apply Output</summary>
+
+  ```sh
+  module.example.aws_codepipeline.source_build_deploy: Modifying... (ID: example-codepipeline)
+    stage.0.action.0.configuration.%:          "4" => "5"
+    stage.0.action.0.configuration.OAuthToken: "" => "********************************************"                                                 
+  module.example.aws_codepipeline.source_build_deploy: Modifications complete after 1s (ID: example-codepipeline)
+
+  Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
+  ```
+</details>
 
 
 
