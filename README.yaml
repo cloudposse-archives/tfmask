@@ -1,0 +1,204 @@
+---
+#
+# This is the canonical configuration for the `README.md`
+# Run `make readme` to rebuild the `README.md`
+#
+
+# Name of this project
+name: tfmask
+
+# Logo for this project
+#logo: docs/logo.png
+
+# License of this project
+license: "APACHE2"
+
+# Canonical GitHub repo
+github_repo: cloudposse/tfmask
+
+# Badges to display
+badges:
+  - name: "Build Status"
+    image: "https://travis-ci.org/cloudposse/tfmask.svg?branch=master"
+    url: "https://travis-ci.org/cloudposse/tfmask"
+  - name: "Latest Release"
+    image: "https://img.shields.io/github/release/cloudposse/tfmask.svg"
+    url: "https://github.com/cloudposse/tfmask/releases/latest"
+  - name: "Slack Community"
+    image: "https://slack.cloudposse.com/badge.svg"
+    url: "https://slack.cloudposse.com"
+
+# Short description of this project
+description: |-
+  Command line utility to mask sensitive output from a `transform plan` or `terraform apply`.
+
+introduction: |-
+
+  If you answer "yes" to any of these questions, then look no further!
+
+  * Have you ever wished you could easily filter sensitive output from a `terraform plan` or `terraform apply`?
+  * Do you use terraform providers that leak sensitive data to `stdout` (e.g. `terraform-github-provider`)?
+
+  **Yes?** Great! Then this utility is for you.
+
+  The `tfmask` utility will replace the "old value" and the "new value" with the masking character (e.g. `*`).
+    
+  __NOTE__: `tfmask` will preserve the name of the nodes in the graph
+
+# How to use this project
+usage: |-
+
+  __NOTE__: The utility supports a number of configuration settings which can be passed via environment variables.
+
+  | Environment Variable | Description                                  | Default    |
+  |----------------------|----------------------------------------------|------------| 
+  | `TFMASK_CHAR`        |  Character used to mask all output           | `*`        | 
+  | `TFMASK_REGEX`       | Regular expression used to match graph nodes | [see code] | 
+    
+  The basic usage looks like this. We're going to run `terraform plan` and filter it through `tfmask`:
+
+  ```sh
+  terraform plan | tfmask
+  ```
+
+  ### Direnv
+
+  You can use `tfmask` with [`direnv`](https://direnv.net/) to set the defaults.
+
+  Example `.envrc`:
+
+  ```sh
+  # Export terraform environment
+  export TFMASK_CHAR="#"
+  export TFMASK_REGEX="(?i)^.*(secret|password|oauth|token|key).*$"
+  ```
+
+  <details>
+    <summary>Example of Masked Output</summary>
+
+    ```sh
+    Terraform will perform the following actions:
+
+      ~ module.atlantis.module.web_app.module.ecs_codepipeline.aws_codepipeline.source_build_deploy
+          stage.0.action.0.configuration.%:          "4" => "5"
+          stage.0.action.0.configuration.OAuthToken: "" => "*******************************************"
+
+    Plan: 0 to add, 1 to change, 0 to destroy.
+    ```
+  </details>
+
+
+related:
+  - name: "Packages"
+    description: "Cloud Posse installer and distribution of native apps"
+    url: "https://github.com/cloudposse/packages"
+  - name: "build-harness"
+    description: "Collection of Makefiles to facilitate building Golang projects, Dockerfiles, Helm charts, and more"
+    url: "https://github.com/cloudposse/build-harness"
+  - name: "geodesic"
+    description: "Geodesic is the fastest way to get up and running with a rock solid, production grade cloud platform built on strictly Open Source tools."
+    url: "https://github.com/cloudposse/geodesic"
+  - name: "direnv"
+    description: "Unclutter your .profile with an environment switcher for the shell"
+    url: "https://direnv.net/"
+  - name: "tfenv"
+    description: "Transform environment variables for use with Terraform (e.g.  `HOSTNAME` ⇨ `TF_VAR_hostname`)"
+    url: "https://github.com/cloudposse/tfenv"
+
+examples: |-
+
+  ### Compiling the Binary
+
+  ```sh
+  make go/build
+  ```
+
+   ### Use with Terraform Plan
+
+   Many terraform providers unintentionally leak sensitive information when running `terraform plan`. **This is very bad.**
+  
+  <details>
+    <summary>Example of a Leaked Secret from a Terraform Plan</summary>
+
+    ```sh
+    An execution plan has been generated and is shown below.
+    Resource actions are indicated with the following symbols:
+      ~ update in-place
+
+    Terraform will perform the following actions:
+
+      ~ module.example.aws_codepipeline.source_build_deploy
+          stage.0.action.0.configuration.%:          "4" => "5"
+          stage.0.action.0.configuration.OAuthToken: "" => "efba05dbe9b94ba18ae3737a6d6de16eefba05dbe9b9"
+    Plan: 0 to add, 1 to change, 0 to destroy.
+    ```
+    __NOTE:__ This `OAuthToken` is just an example and not a valid token.
+  </details>
+
+
+  Using `tfmask`, the output from `terraform plan` will be masked like this:
+
+  ```sh
+  terraform plan | tfmask
+  ```
+
+  <details>
+    <summary>Example of Masked Terraform Plan Output</summary>
+
+    ```
+     An execution plan has been generated and is shown below.
+    Resource actions are indicated with the following symbols:
+      ~ update in-place
+
+    Terraform will perform the following actions:
+
+      ~ module.example.aws_codepipeline.source_build_deploy
+          stage.0.action.0.configuration.%:          "4" => "5"
+          stage.0.action.0.configuration.OAuthToken: "" => ********************************************"
+    Plan: 0 to add, 1 to change, 0 to destroy.
+    ```
+  </details>
+
+  ### Use with Terraform Apply
+
+  Many terraform providers unintentionally leak sensitive information when running `terraform apply`. **This is very bad.**
+
+  <details>
+    <summary>Example of a Leaked Secret from a Terraform Apply</summary>
+
+    ```sh
+    terraform apply
+    module.example.aws_codepipeline.source_build_deploy: Modifying... (ID: example-codepipeline)
+      stage.0.action.0.configuration.%:          "4" => "5"
+      stage.0.action.0.configuration.OAuthToken: "" => "efba05dbe9b94ba18ae3737a6d6de16eefba05dbe9b9"
+    module.example.aws_codepipeline.source_build_deploy: Modifications complete after 1s (ID: example-codepipeline)
+
+    Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
+    ```
+
+    __NOTE:__ This `OAuthToken` is just an example and not a valid token.
+  </details>
+
+  Using `tfmask`, the output from `terraform apply` will be masked like this:
+
+  ```sh
+  terraform apply | tfmask
+  ```
+  <details>
+    <summary>Example of Masked Terraform Apply Output</summary>
+
+    ```sh
+    module.example.aws_codepipeline.source_build_deploy: Modifying... (ID: example-codepipeline)
+      stage.0.action.0.configuration.%:          "4" => "5"
+      stage.0.action.0.configuration.OAuthToken: "" => "********************************************"                                                 
+    module.example.aws_codepipeline.source_build_deploy: Modifications complete after 1s (ID: example-codepipeline)
+
+    Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
+    ```
+  </details>
+
+# Contributors to this project
+contributors:
+  - name: "Erik Osterman"
+    homepage: "https://github.com/osterman"
+    github: "osterman"
