@@ -74,7 +74,7 @@ Example `.envrc`:
 ```sh
 # Export terraform environment
 export TFMASK_CHAR="#"
-ex[prt TFMASK_REGEX="(?i)^.*(secret|password|oauth|token|key).*$"
+export TFMASK_REGEX="(?i)^.*(secret|password|oauth|token|key).*$"
 ```
 
 <details>

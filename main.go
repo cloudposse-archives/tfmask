@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-    "unicode/utf8"
+	"unicode/utf8"
 )
 
 func init() {
@@ -57,7 +57,7 @@ func main() {
 	}
 
   	if err := scanner.Err(); err != nil {
-        fmt.Fprintln(os.Stderr, "error:", err)
-        os.Exit(1)
-    }
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
 }
