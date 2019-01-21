@@ -83,7 +83,7 @@ usage: |-
   ```sh
   # Export terraform environment
   export TFMASK_CHAR="#"
-  export TFMASK_VALUES_REGEX="(?i)^.*(secret|password|oauth|token|key).*$"
+  export TFMASK_VALUES_REGEX="(?i)^.*(oauth|secret|token|password|key|result).*$"
   ```
 
   <details>
