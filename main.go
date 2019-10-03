@@ -39,14 +39,15 @@ func main() {
 
 	// stage.0.action.0.configuration.OAuthToken: "" => "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 	reTfPlanLine := regexp.MustCompile("^( +)([a-zA-Z0-9%._-]+):( +)([\"<])(.*?)([>\"]) +=> +([\"<])(.*?)([>\"])(.*)$")
+	reTfPlanLineAlt := regexp.MustCompile("^( +)([a-zA-Z0-9%._-]+):( +)([\"<])(.*?)([>\"])$")
 
 	// random_id.some_id: Refreshing state... (ID: itILf4x5lqleQV9ZwT2gH-Zg3yuXM8pdUu6VFTX...P5vqUmggDweOoxFMPY5t9thA0SJE2EZIhcHbsQ)
 	reTfPlanStatusLine := regexp.MustCompile("^(.*?): (.*?) +\\(ID: (.*?)\\)$")
-	
 
 	// -/+ random_string.postgres_admin_password (tainted) (new resource required)
 	reTfPlanCurrentResource := regexp.MustCompile("^([~/+-]+) (.*?) +(.*)$")
 	reTfApplyCurrentResource := regexp.MustCompile("^([a-z].*?): (.*?)$")
+	reTfApplyCurrentResourceAlt := regexp.MustCompile("^( +)([a-z].*?): (.*?)$")
 	currentResource := ""
 
 	reTfValues := regexp.MustCompile(tfmaskValuesRegex)
@@ -60,6 +61,11 @@ func main() {
 		} else if reTfApplyCurrentResource.MatchString(line) {
 			match := reTfApplyCurrentResource.FindStringSubmatch(line)
 			currentResource = match[1]
+		} else if reTfApplyCurrentResourceAlt.MatchString(line) {
+			match := reTfApplyCurrentResource.FindStringSubmatch(line)
+			if len(match) > 2 {
+				currentResource = match[2]
+			}
 		}
 
 		if reTfPlanStatusLine.MatchString(line) {
@@ -73,14 +79,14 @@ func main() {
 		} else if reTfPlanLine.MatchString(line) {
 			match := reTfPlanLine.FindStringSubmatch(line)
 			leadingWhitespace := match[1]
-			property := match[2]            // something like `stage.0.action.0.configuration.OAuthToken`
+			property := match[2] // something like `stage.0.action.0.configuration.OAuthToken`
 			trailingWhitespace := match[3]
-			firstQuote := match[4]          // < or "
-			oldValue := match[5] 
-			secondQuote := match[6]         // > or "
-			thirdQuote := match[7]          // < or "
+			firstQuote := match[4] // < or "
+			oldValue := match[5]
+			secondQuote := match[6] // > or "
+			thirdQuote := match[7]  // < or "
 			newValue := match[8]
-			fourthQuote := match[9]         // > or "
+			fourthQuote := match[9] // > or "
 			postfix := match[10]
 
 			if reTfValues.MatchString(property) || reTfResource.MatchString(currentResource) {
@@ -92,11 +98,33 @@ func main() {
 				if newValue != "sensitive" && newValue != "computed" && newValue != "<computed" {
 					newValue = strings.Repeat(tfmaskChar, utf8.RuneCountInString(newValue))
 				}
-				fmt.Printf("%v%v:%v%v%v%v => %v%v%v%v\n", 
+				fmt.Printf("%v%v:%v%v%v%v => %v%v%v%v\n",
 					leadingWhitespace, property, trailingWhitespace, firstQuote, oldValue, secondQuote, thirdQuote, newValue, fourthQuote, postfix)
+			}
+		} else if reTfPlanLineAlt.MatchString(line) {
+			match := reTfPlanLineAlt.FindStringSubmatch(line)
+			leadingWhitespace := match[1]
+			property := match[2] // something like `stage.0.action.0.configuration.OAuthToken`
+			trailingWhitespace := match[3]
+			firstQuote := match[4] // < or "
+			oldValue := match[5]
+			secondQuote := match[6] // > or "
+
+			if reTfValues.MatchString(property) || reTfResource.MatchString(currentResource) {
+				// The value inside the "..." or <...>
+				if oldValue != "sensitive" && oldValue != "computed" && oldValue != "<computed" {
+					oldValue = strings.Repeat(tfmaskChar, utf8.RuneCountInString(oldValue))
+				}
+				// The value inside the "..." or <...>
+				// if newValue != "sensitive" && newValue != "computed" && newValue != "<computed" {
+				// 	newValue = strings.Repeat(tfmaskChar, utf8.RuneCountInString(newValue))
+				// }
+				fmt.Printf("%v%v:%v%v%v%v\n",
+					leadingWhitespace, property, trailingWhitespace, firstQuote, oldValue, secondQuote)
 			} else {
 				fmt.Println(line)
 			}
+
 		} else {
 			// We matched nothing
 			fmt.Println(line)
