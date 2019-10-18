@@ -38,7 +38,7 @@ func main() {
 	var tfmaskResourceRegex = getEnv("TFMASK_RESOURCES_REGEX", "(?i)^(random_id).*$")
 
 	// stage.0.action.0.configuration.OAuthToken: "" => "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-	reTfPlanLine := regexp.MustCompile("^( +)([a-zA-Z0-9%._-]+):( +)([\"<])(.*?)([>\"]) +=> +([\"<])(.*?)([>\"])(.*)$")
+	reTfPlanLine := regexp.MustCompile("^( +)([a-zA-Z0-9%._-]+):( +)([\"<])(.*?)([>\"]) +=> +([\"<])(.*)([>\"])(.*)$")
 
 	// random_id.some_id: Refreshing state... (ID: itILf4x5lqleQV9ZwT2gH-Zg3yuXM8pdUu6VFTX...P5vqUmggDweOoxFMPY5t9thA0SJE2EZIhcHbsQ)
 	reTfPlanStatusLine := regexp.MustCompile("^(.*?): (.*?) +\\(ID: (.*?)\\)$")
