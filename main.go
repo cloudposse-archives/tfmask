@@ -25,7 +25,12 @@ type match struct {
 }
 
 type expression struct {
-	planStatusRegex *regexp.Regexp
+	planStatusRegex         *regexp.Regexp
+	reTfPlanLine            *regexp.Regexp
+	reTfPlanCurrentResource *regexp.Regexp
+	resourceIndex           int
+	assign                  string
+	operator                string
 }
 
 func init() {
@@ -45,11 +50,31 @@ func getEnv(key, fallback string) string {
 var versionedExpressions = map[string]expression{
 	"0.11": expression{
 		planStatusRegex: regexp.MustCompile(
-			"^(.*?): (.*?) +\\(ID: (.*?)\\)$"),
+			"^(.*?): (.*?) +\\(ID: (.*?)\\)$",
+		),
+		reTfPlanLine: regexp.MustCompile(
+			"^( +)([a-zA-Z0-9%._-]+):( +)([\"<])(.*?)([>\"]) +=> +([\"<])(.*)([>\"])(.*)$",
+		),
+		reTfPlanCurrentResource: regexp.MustCompile(
+			"^([~/+-]+) (.*?) +(.*)$",
+		),
+		resourceIndex: 2,
+		assign:        ":",
+		operator:      "=>",
 	},
 	"0.12": expression{
 		planStatusRegex: regexp.MustCompile(
-			"^(.*?): (.*?) +\\[id=(.*?)\\]$"),
+			"^(.*?): (.*?) +\\[id=(.*?)\\]$",
+		),
+		reTfPlanLine: regexp.MustCompile(
+			"^( +)([ ~a-zA-Z0-9%._-]+)=( +)([\"<])(.*?)([>\"]) +-> +(\\()(.*)(\\))(.*)$",
+		),
+		reTfPlanCurrentResource: regexp.MustCompile(
+			"^([~/+-]+) (.*?) +(.*) (.*) (.*)$",
+		),
+		resourceIndex: 3,
+		assign:        "=",
+		operator:      "->",
 	},
 }
 
@@ -64,8 +89,6 @@ func main() {
 	// Pattern representing sensitive resource
 	var tfmaskResourceRegex = getEnv("TFMASK_RESOURCES_REGEX",
 		"(?i)^(random_id).*$")
-	// stage.0.action.0.configuration.OAuthToken: "" => "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
-	reTfPlanLine := regexp.MustCompile("^( +)([a-zA-Z0-9%._-]+):( +)([\"<])(.*?)([>\"]) +=> +([\"<])(.*)([>\"])(.*)$")
 
 	var tfenv = getEnv("TFENV", "0.11")
 
@@ -77,9 +100,10 @@ func main() {
 	currentResource := ""
 	for scanner.Scan() {
 		line := scanner.Text()
-		currentResource = getCurrentResource(currentResource, line)
-		fmt.Println(processLine(versionedExpressions, reTfPlanLine,
-			reTfResource, reTfValues, tfmaskChar, currentResource, line))
+		currentResource = getCurrentResource(versionedExpressions,
+			currentResource, line)
+		fmt.Println(processLine(versionedExpressions, reTfResource, reTfValues,
+			tfmaskChar, currentResource, line))
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -88,13 +112,13 @@ func main() {
 	}
 }
 
-func getCurrentResource(currentResource, line string) string {
-	// -/+ random_string.postgres_admin_password (tainted) (new resource required)
-	reTfPlanCurrentResource := regexp.MustCompile("^([~/+-]+) (.*?) +(.*)$")
+func getCurrentResource(expression expression, currentResource, line string) string {
 	reTfApplyCurrentResource := regexp.MustCompile("^([a-z].*?): (.*?)$")
-	if reTfPlanCurrentResource.MatchString(line) {
-		match := reTfPlanCurrentResource.FindStringSubmatch(line)
-		currentResource = match[2]
+	if expression.reTfPlanCurrentResource.MatchString(line) {
+		match := expression.reTfPlanCurrentResource.FindStringSubmatch(line)
+		strippedResource := strings.Replace(match[expression.resourceIndex],
+			"\"", "", -1)
+		currentResource = strippedResource
 	} else if reTfApplyCurrentResource.MatchString(line) {
 		match := reTfApplyCurrentResource.FindStringSubmatch(line)
 		currentResource = match[1]
@@ -102,15 +126,16 @@ func getCurrentResource(currentResource, line string) string {
 	return currentResource
 }
 
-func processLine(expression expression, reTfPlanLine, reTfResource,
+func processLine(expression expression, reTfResource,
 	reTfValues *regexp.Regexp, tfmaskChar, currentResource,
 	line string) string {
 	if expression.planStatusRegex.MatchString(line) {
 		line = planStatus(expression.planStatusRegex, reTfResource, tfmaskChar,
 			line)
-	} else if reTfPlanLine.MatchString(line) {
-		line = planLine(reTfPlanLine, reTfResource, reTfValues,
-			currentResource, tfmaskChar, line)
+	} else if expression.reTfPlanLine.MatchString(line) {
+		line = planLine(expression.reTfPlanLine, reTfResource, reTfValues,
+			currentResource, tfmaskChar, expression.assign,
+			expression.operator, line)
 	}
 	return line
 }
@@ -144,27 +169,38 @@ func matchFromLine(reTfPlanLine *regexp.Regexp, line string) match {
 }
 
 func planLine(reTfPlanLine, reTfResource, reTfValues *regexp.Regexp,
-	currentResource, tfmaskChar, line string) string {
+	currentResource, tfmaskChar, assign, operator, line string) string {
 	match := matchFromLine(reTfPlanLine, line)
 	if reTfValues.MatchString(match.property) ||
 		reTfResource.MatchString(currentResource) {
-		// The value inside the "..." or <...>
+		// The value inside the "...", <...> or (...)
 		oldValue := maskValue(match.oldValue, tfmaskChar)
-		// The value inside the "..." or <...>
+		// The value inside the "...", <...> or (...)
 		newValue := maskValue(match.newValue, tfmaskChar)
-		line = fmt.Sprintf("%v%v:%v%v%v%v => %v%v%v%v",
-			match.leadingWhitespace, match.property, match.trailingWhitespace,
-			match.firstQuote, oldValue, match.secondQuote, match.thirdQuote,
+		line = fmt.Sprintf("%v%v%v%v%v%v%v %v %v%v%v%v",
+			match.leadingWhitespace, match.property, assign,
+			match.trailingWhitespace, match.firstQuote, oldValue,
+			match.secondQuote, operator, match.thirdQuote,
 			newValue, match.fourthQuote, match.postfix)
 	}
 	return line
 }
 
 func maskValue(value, tfmaskChar string) string {
-	if value != "sensitive" && value != "computed" &&
-		value != "<computed" {
+	exclusions := []string{"sensitive", "computed", "<computed",
+		"known after apply"}
+	if !contains(exclusions, value) {
 		return strings.Repeat(tfmaskChar,
 			utf8.RuneCountInString(value))
 	}
 	return value
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
