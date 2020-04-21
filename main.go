@@ -63,7 +63,7 @@ func main() {
 		"(?i)^.*(oauth|secret|token|password|key|result).*$")
 	// Pattern representing sensitive resource
 	var tfmaskResourceRegex = getEnv("TFMASK_RESOURCES_REGEX",
-		"(?i)^(random_id|random_string).*$")
+		"(?i)^(random_id).*$")
 	// stage.0.action.0.configuration.OAuthToken: "" => "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 	reTfPlanLine := regexp.MustCompile("^( +)([a-zA-Z0-9%._-]+):( +)([\"<])(.*?)([>\"]) +=> +([\"<])(.*)([>\"])(.*)$")
 
@@ -73,9 +73,11 @@ func main() {
 	reTfResource := regexp.MustCompile(tfmaskResourceRegex)
 	scanner := bufio.NewScanner(os.Stdin)
 	versionedExpressions := versionedExpressions[tfenv]
+	// initialise currentResource once before scanning
+	currentResource := ""
 	for scanner.Scan() {
 		line := scanner.Text()
-		currentResource := getCurrentResource(line)
+		currentResource = getCurrentResource(currentResource, line)
 		fmt.Println(processLine(versionedExpressions, reTfPlanLine,
 			reTfResource, reTfValues, tfmaskChar, currentResource, line))
 	}
@@ -86,7 +88,7 @@ func main() {
 	}
 }
 
-func getCurrentResource(line string) (currentResource string) {
+func getCurrentResource(currentResource, line string) string {
 	// -/+ random_string.postgres_admin_password (tainted) (new resource required)
 	reTfPlanCurrentResource := regexp.MustCompile("^([~/+-]+) (.*?) +(.*)$")
 	reTfApplyCurrentResource := regexp.MustCompile("^([a-z].*?): (.*?)$")
@@ -97,7 +99,7 @@ func getCurrentResource(line string) (currentResource string) {
 		match := reTfApplyCurrentResource.FindStringSubmatch(line)
 		currentResource = match[1]
 	}
-	return
+	return currentResource
 }
 
 func processLine(expression expression, reTfPlanLine, reTfResource,
@@ -150,7 +152,7 @@ func planLine(reTfPlanLine, reTfResource, reTfValues *regexp.Regexp,
 		oldValue := maskValue(match.oldValue, tfmaskChar)
 		// The value inside the "..." or <...>
 		newValue := maskValue(match.newValue, tfmaskChar)
-		line = fmt.Sprintf("%v%v:%v%v%v%v => %v%v%v%v\n",
+		line = fmt.Sprintf("%v%v:%v%v%v%v => %v%v%v%v",
 			match.leadingWhitespace, match.property, match.trailingWhitespace,
 			match.firstQuote, oldValue, match.secondQuote, match.thirdQuote,
 			newValue, match.fourthQuote, match.postfix)
