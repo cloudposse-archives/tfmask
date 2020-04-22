@@ -18,9 +18,9 @@ type match struct {
 	firstQuote         string // < or "
 	oldValue           string
 	secondQuote        string // > or "
-	thirdQuote         string // < or "
+	thirdQuote         string // < or " or (
 	newValue           string
-	fourthQuote        string // > or "
+	fourthQuote        string // > or " or )
 	postfix            string
 }
 
@@ -90,6 +90,7 @@ func main() {
 	var tfmaskResourceRegex = getEnv("TFMASK_RESOURCES_REGEX",
 		"(?i)^(random_id).*$")
 
+	// Default to tf 0.11, but users can override
 	var tfenv = getEnv("TFENV", "0.11")
 
 	reTfValues := regexp.MustCompile(tfmaskValuesRegex)
@@ -116,6 +117,7 @@ func getCurrentResource(expression expression, currentResource, line string) str
 	reTfApplyCurrentResource := regexp.MustCompile("^([a-z].*?): (.*?)$")
 	if expression.reTfPlanCurrentResource.MatchString(line) {
 		match := expression.reTfPlanCurrentResource.FindStringSubmatch(line)
+		// for tf 0.12 the resource is wrapped in quotes, so remove them
 		strippedResource := strings.Replace(match[expression.resourceIndex],
 			"\"", "", -1)
 		currentResource = strippedResource
@@ -161,9 +163,9 @@ func matchFromLine(reTfPlanLine *regexp.Regexp, line string) match {
 		firstQuote:         subMatch[4],
 		oldValue:           subMatch[5],
 		secondQuote:        subMatch[6], // > or "
-		thirdQuote:         subMatch[7], // < or "
+		thirdQuote:         subMatch[7], // < or " or (
 		newValue:           subMatch[8],
-		fourthQuote:        subMatch[9], // > or "
+		fourthQuote:        subMatch[9], // > or " or )
 		postfix:            subMatch[10],
 	}
 }
