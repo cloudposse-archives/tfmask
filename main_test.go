@@ -23,9 +23,8 @@ var lineTests = []struct {
 	{"random_id.some_id", "random_id.some_id: Refreshing state... (ID: itILf4x5lqleQV9ZwT2gH-Zg3yuXM8pdUu6VFTX...P5vqUmggDweOoxFMPY5t9thA0SJE2EZIhcHbsQ)",
 		"random_id.some_id: Refreshing state... (ID: ********************************************************************************)",
 		"0.11"},
-	// the id value isn't sensitive with random_string.some_password
 	{"random_string.some_password", "random_string.some_password: Refreshing state... (ID: 2iB@@h22@12kA2qE)",
-		"random_string.some_password: Refreshing state... (ID: 2iB@@h22@12kA2qE)",
+		"random_string.some_password: Refreshing state... (ID: ****************)",
 		"0.11"},
 	{"random_id.some_id", " id:               \"VIxvs2TloohI2XtAsHyu68wQvFQQCTOGgsglqC7zKjsnOmUMIMrZ1y5J6ieOIzl-YXiS1_XmVc8J8gb9fIcwIA\" => <computed> (forces new resource)",
 		" id:               \"**************************************************************************************\" => <computed> (forces new resource)",
@@ -40,15 +39,14 @@ var lineTests = []struct {
 	{"", "random_id.some_id: Creation complete after 0s [id=YfK9aF]",
 		"random_id.some_id: Creation complete after 0s [id=******]",
 		"0.12"},
-	// the id value isn't sensitive with random_string.some_password
 	{"random_string.some_password", "random_string.some_password: Refreshing state... [id=2iB@@h22@12kA2qE]",
-		"random_string.some_password: Refreshing state... [id=2iB@@h22@12kA2qE]",
+		"random_string.some_password: Refreshing state... [id=****************]",
 		"0.12"},
 	{"random_id.some_id", " ~ id =               \"VIxvs2TloohI2XtAsHyu68wQvFQQCTOGgsglqC7zKjsnOmUMIMrZ1y5J6ieOIzl-YXiS1_XmVc8J8gb9fIcwIA\" -> (known after apply)",
 		" ~ id =               \"**************************************************************************************\" -> (known after apply)",
 		"0.12"},
 	{"", "random_string.some_password: Creation complete after 0s [id=5s80SMs@JJpA8e/h]",
-		"random_string.some_password: Creation complete after 0s [id=5s80SMs@JJpA8e/h]",
+		"random_string.some_password: Creation complete after 0s [id=****************]",
 		"0.12"},
 }
 
@@ -58,9 +56,9 @@ func TestProcessLine(t *testing.T) {
 		// Character used to mask sensitive output
 		var tfmaskChar = "*"
 		// Pattern representing sensitive output
-		var tfmaskValuesRegex = "(?i)^.*(oauth|secret|token|password|key|result).*$"
+		var tfmaskValuesRegex = "(?i)^.*(oauth|secret|token|password|key|result|id).*$"
 		// Pattern representing sensitive resource
-		var tfmaskResourceRegex = "(?i)^(random_id).*$"
+		var tfmaskResourceRegex = "(?i)^(random_id|random_string).*$"
 
 		versionedExpressions := versionedExpressions[lineTest.minorVersion]
 

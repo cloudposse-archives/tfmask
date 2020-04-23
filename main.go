@@ -85,10 +85,10 @@ func main() {
 	var tfmaskChar = getEnv("TFMASK_CHAR", "*")
 	// Pattern representing sensitive output
 	var tfmaskValuesRegex = getEnv("TFMASK_VALUES_REGEX",
-		"(?i)^.*(oauth|secret|token|password|key|result).*$")
+		"(?i)^.*(oauth|secret|token|password|key|result|id).*$")
 	// Pattern representing sensitive resource
 	var tfmaskResourceRegex = getEnv("TFMASK_RESOURCES_REGEX",
-		"(?i)^(random_id).*$")
+		"(?i)^(random_id|random_string).*$")
 
 	// Default to tf 0.11, but users can override
 	var tfenv = getEnv("TFENV", "0.11")
