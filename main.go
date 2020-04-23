@@ -91,7 +91,7 @@ func main() {
 		"(?i)^(random_id|random_string).*$")
 
 	// Default to tf 0.11, but users can override
-	var tfenv = getEnv("TFENV", "0.11")
+	var tfenv = getEnv("TFENV", "0.12")
 
 	reTfValues := regexp.MustCompile(tfmaskValuesRegex)
 	reTfResource := regexp.MustCompile(tfmaskResourceRegex)
