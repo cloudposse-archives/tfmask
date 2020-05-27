@@ -67,10 +67,10 @@ var versionedExpressions = map[string]expression{
 			"^(.*?): (.*?) +\\[id=(.*?)\\]$",
 		),
 		reTfPlanLine: regexp.MustCompile(
-			"^( +)([ ~a-zA-Z0-9%._-]+)=( +)([\"<])(.*?)([>\"]) +-> +(\\()(.*)(\\))(.*)$",
+			"^( +)([ +~a-zA-Z0-9%._-]+)=( +)([\"<])(.*?)([>\"])( +-> +(\\()(.*)(\\))(.*))?$",
 		),
 		reTfPlanCurrentResource: regexp.MustCompile(
-			"^([~/+-]+) (.*?) +(.*) (.*) (.*)$",
+			"^([~/+-]+|^\\s+[~/+-]+) (.*?) +(.*) (.*) (.*)$",
 		),
 		resourceIndex: 3,
 		assign:        "=",
@@ -85,7 +85,7 @@ func main() {
 	var tfmaskChar = getEnv("TFMASK_CHAR", "*")
 	// Pattern representing sensitive output
 	var tfmaskValuesRegex = getEnv("TFMASK_VALUES_REGEX",
-		"(?i)^.*(oauth|secret|token|password|key|result|id).*$")
+		"(?i)^.*(oauth|secret|token|password|key|result|id|recipient).*$")
 	// Pattern representing sensitive resource
 	var tfmaskResourceRegex = getEnv("TFMASK_RESOURCES_REGEX",
 		"(?i)^(random_id|random_string).*$")
