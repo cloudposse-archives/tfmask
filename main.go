@@ -67,7 +67,7 @@ var versionedExpressions = map[string]expression{
 			"^(.*?): (.*?) +\\[id=(.*?)\\]$",
 		),
 		reTfPlanLine: regexp.MustCompile(
-			"^( +)([ +~a-zA-Z0-9%._-]+)=( +)([\"<])(.*?)([>\"])( +-> +(\\()(.*)(\\))(.*))?$",
+			"^( +)([ +~a-zA-Z0-9%._-]+)=( +)([\"<])(.*?)([>\"])( +-> +?(\\()(.*)(\\))(.*))?$",
 		),
 		reTfPlanCurrentResource: regexp.MustCompile(
 			"^([~/+-]+|^\\s+[~/+-]+) (.*?) +(.*) (.*) (.*)$",
@@ -85,7 +85,7 @@ func main() {
 	var tfmaskChar = getEnv("TFMASK_CHAR", "*")
 	// Pattern representing sensitive output
 	var tfmaskValuesRegex = getEnv("TFMASK_VALUES_REGEX",
-		"(?i)^.*(oauth|secret|token|password|key|result|id|recipient).*$")
+		"(?i)^.*(oauth|secret|token|password|key|result|id).*$")
 	// Pattern representing sensitive resource
 	var tfmaskResourceRegex = getEnv("TFMASK_RESOURCES_REGEX",
 		"(?i)^(random_id|random_string).*$")
@@ -156,17 +156,33 @@ func planStatus(planStatusRegex, reTfResource *regexp.Regexp, tfmaskChar,
 
 func matchFromLine(reTfPlanLine *regexp.Regexp, line string) match {
 	subMatch := reTfPlanLine.FindStringSubmatch(line)
-	return match{
-		leadingWhitespace:  subMatch[1],
-		property:           subMatch[2], // something like `stage.0.action.0.configuration.OAuthToken`
-		trailingWhitespace: subMatch[3],
-		firstQuote:         subMatch[4],
-		oldValue:           subMatch[5],
-		secondQuote:        subMatch[6], // > or "
-		thirdQuote:         subMatch[7], // < or " or (
-		newValue:           subMatch[8],
-		fourthQuote:        subMatch[9], // > or " or )
-		postfix:            subMatch[10],
+	subMatchLength := len(subMatch)
+	if subMatchLength == 12 {
+		return match {
+			leadingWhitespace:  subMatch[1],
+			property:           subMatch[2], // something like `stage.0.action.0.configuration.OAuthToken`
+			trailingWhitespace: subMatch[3],
+			firstQuote:         subMatch[4],
+			oldValue:           subMatch[5],
+			secondQuote:        subMatch[6], // > or "
+			thirdQuote:         subMatch[8], // < or " or (
+			newValue:           subMatch[9],
+			fourthQuote:        subMatch[10], // > or " or )
+			postfix:            subMatch[11],
+		}
+	} else {
+		return match {
+			leadingWhitespace:  subMatch[1],
+			property:           subMatch[2], // something like `stage.0.action.0.configuration.OAuthToken`
+			trailingWhitespace: subMatch[3],
+			firstQuote:         subMatch[4],
+			oldValue:           subMatch[5],
+			secondQuote:        subMatch[6], // > or "
+			thirdQuote:         subMatch[7], // < or " or (
+			newValue:           subMatch[8],
+			fourthQuote:        subMatch[9], // > or " or )
+			postfix:            subMatch[10],
+		}
 	}
 }
 
@@ -179,11 +195,19 @@ func planLine(reTfPlanLine, reTfResource, reTfValues *regexp.Regexp,
 		oldValue := maskValue(match.oldValue, tfmaskChar)
 		// The value inside the "...", <...> or (...)
 		newValue := maskValue(match.newValue, tfmaskChar)
-		line = fmt.Sprintf("%v%v%v%v%v%v%v %v %v%v%v%v",
-			match.leadingWhitespace, match.property, assign,
-			match.trailingWhitespace, match.firstQuote, oldValue,
-			match.secondQuote, operator, match.thirdQuote,
-			newValue, match.fourthQuote, match.postfix)
+		if match.newValue == "" {
+			line = fmt.Sprintf("%v%v%v%v%v%v%v %v%v%v%v",
+				match.leadingWhitespace, match.property, assign,
+				match.trailingWhitespace, match.firstQuote, oldValue,
+				match.secondQuote, match.thirdQuote,
+				newValue, match.fourthQuote, match.postfix)
+		} else {
+			line = fmt.Sprintf("%v%v%v%v%v%v%v %v %v%v%v%v",
+				match.leadingWhitespace, match.property, assign,
+				match.trailingWhitespace, match.firstQuote, oldValue,
+				match.secondQuote, operator, match.thirdQuote,
+				newValue, match.fourthQuote, match.postfix)
+		}
 	}
 	return line
 }
