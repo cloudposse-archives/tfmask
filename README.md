@@ -73,7 +73,7 @@ __IMPORTANT__: Pass `-no-color` to `terraform plan` and `terraform apply` for pr
 The basic usage looks like this. We're going to run `terraform plan` and filter it through `tfmask`:
 
 ```sh
-terraform plan | tfmask
+terraform plan -no-color | tfmask
 ```
 
 ### Direnv
@@ -140,7 +140,7 @@ make go/build
 Using `tfmask`, the output from `terraform plan` will be masked like this:
 
 ```sh
-terraform plan | tfmask
+terraform plan -no-color | tfmask
 ```
 
 <details>
@@ -183,7 +183,7 @@ Many terraform providers unintentionally leak sensitive information when running
 Using `tfmask`, the output from `terraform apply` will be masked like this:
 
 ```sh
-terraform apply | tfmask
+terraform apply -no-color | tfmask
 ```
 <details>
   <summary>Example of Masked Terraform Apply Output</summary>
@@ -375,3 +375,4 @@ Check out [our other projects][github], [follow us on twitter][twitter], [apply 
   [share_googleplus]: https://plus.google.com/share?url=https://github.com/cloudposse/tfmask
   [share_email]: mailto:?subject=tfmask&body=https://github.com/cloudposse/tfmask
   [beacon]: https://ga-beacon.cloudposse.com/UA-76589703-4/cloudposse/tfmask?pixel&cs=github&cm=readme&an=tfmask
+
