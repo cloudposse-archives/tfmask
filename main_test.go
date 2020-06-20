@@ -167,3 +167,54 @@ func TestMaskValue(t *testing.T) {
 		}
 	}
 }
+
+var assignmentTests = []struct {
+	line           string
+	expectedResult string
+	minorVersion   string
+}{
+	// tf 0.12 ------------------------------------
+	{
+		" + \"foo_secret\" = \"123456\"",
+		" + \"foo_secret\" = \"******\"",
+		"0.12",
+	},
+	{
+		" - \"foo_secret\" = \"123456\"",
+		" - \"foo_secret\" = \"******\"",
+		"0.12",
+	},
+	{
+		" ~ \"foo_secret\" = \"123456\"",
+		" ~ \"foo_secret\" = \"******\"",
+		"0.12",
+	},
+	{
+		" ~ \"foo\" = \"123456\"",
+		" ~ \"foo\" = \"123456\"",
+		"0.12",
+	},
+	{
+		" \"foo_secret\" = \"123456\"",
+		" \"foo_secret\" = \"******\"",
+		"0.12",
+	},
+}
+
+func TestAssignmentLine(t *testing.T) {
+	// Character used to mask sensitive output
+	var tfmaskChar = "*"
+	// Pattern representing sensitive output
+	var tfmaskValuesRegex = "(?i)^.*(oauth|secret|token|password|key|result|id).*$"
+	reTfValues := regexp.MustCompile(tfmaskValuesRegex)
+
+	for _, assignmentTest := range assignmentTests {
+		result := assignmentLine(
+			versionedExpressions[assignmentTest.minorVersion].reMapKeyPair,
+			reTfValues, tfmaskChar,
+			assignmentTest.line)
+		if result != assignmentTest.expectedResult {
+			t.Errorf("Got %s, want %s", result, assignmentTest.expectedResult)
+		}
+	}
+}
