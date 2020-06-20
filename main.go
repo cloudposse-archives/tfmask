@@ -24,10 +24,19 @@ type match struct {
 	postfix            string
 }
 
+type keyValueMatch struct {
+	leadingWhitespace        string
+	property                 string
+	trailingWhitespaceBefore string
+	trailingWhitespaceAfter  string
+	oldValue                 string
+}
+
 type expression struct {
 	planStatusRegex         *regexp.Regexp
 	reTfPlanLine            *regexp.Regexp
 	reTfPlanCurrentResource *regexp.Regexp
+	reMapKeyPair            *regexp.Regexp
 	resourceIndex           int
 	assign                  string
 	operator                string
@@ -58,6 +67,9 @@ var versionedExpressions = map[string]expression{
 		reTfPlanCurrentResource: regexp.MustCompile(
 			"^([~/+-]+) (.*?) +(.*)$",
 		),
+		reMapKeyPair: regexp.MustCompile(
+			"(?i)^(\\s+(?:[~+-] )?)\"(.*)\"(\\s+)=(\\s+)\"(.*)\"$",
+		),
 		resourceIndex: 2,
 		assign:        ":",
 		operator:      "=>",
@@ -71,6 +83,9 @@ var versionedExpressions = map[string]expression{
 		),
 		reTfPlanCurrentResource: regexp.MustCompile(
 			"^([~/+-]+|^\\s+[~/+-]+) (.*?) +(.*) (.*) (.*)$",
+		),
+		reMapKeyPair: regexp.MustCompile(
+			"(?i)^(\\s+(?:[~+-] )?)\"(.*)\"(\\s+)=(\\s+)\"(.*)\"$",
 		),
 		resourceIndex: 3,
 		assign:        "=",
@@ -90,14 +105,14 @@ func main() {
 	var tfmaskResourceRegex = getEnv("TFMASK_RESOURCES_REGEX",
 		"(?i)^(random_id|random_string).*$")
 
-	// Default to tf 0.11, but users can override
+	// Default to tf 0.12, but users can override
 	var tfenv = getEnv("TFENV", "0.12")
 
 	reTfValues := regexp.MustCompile(tfmaskValuesRegex)
 	reTfResource := regexp.MustCompile(tfmaskResourceRegex)
 	scanner := bufio.NewScanner(os.Stdin)
 	versionedExpressions := versionedExpressions[tfenv]
-	// initialise currentResource once before scanning
+	// initialize currentResource once before scanning
 	currentResource := ""
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -125,6 +140,7 @@ func getCurrentResource(expression expression, currentResource, line string) str
 		match := reTfApplyCurrentResource.FindStringSubmatch(line)
 		currentResource = match[1]
 	}
+
 	return currentResource
 }
 
@@ -138,6 +154,9 @@ func processLine(expression expression, reTfResource,
 		line = planLine(expression.reTfPlanLine, reTfResource, reTfValues,
 			currentResource, tfmaskChar, expression.assign,
 			expression.operator, line)
+	} else if expression.reMapKeyPair.MatchString(line) {
+		line = assignmentLine(expression.reMapKeyPair, reTfValues,
+			tfmaskChar, line)
 	}
 	return line
 }
@@ -186,6 +205,17 @@ func matchFromLine(reTfPlanLine *regexp.Regexp, line string) match {
 	}
 }
 
+func matchFromAssignment(reMapKeyPair *regexp.Regexp, line string) keyValueMatch {
+	subMatch := reMapKeyPair.FindStringSubmatch(line)
+	return keyValueMatch{
+		leadingWhitespace:        subMatch[1],
+		property:                 subMatch[2],
+		trailingWhitespaceBefore: subMatch[3],
+		trailingWhitespaceAfter:  subMatch[4],
+		oldValue:                 subMatch[5],
+	}
+}
+
 func planLine(reTfPlanLine, reTfResource, reTfValues *regexp.Regexp,
 	currentResource, tfmaskChar, assign, operator, line string) string {
 	match := matchFromLine(reTfPlanLine, line)
@@ -208,6 +238,20 @@ func planLine(reTfPlanLine, reTfResource, reTfValues *regexp.Regexp,
 				match.secondQuote, operator, match.thirdQuote,
 				newValue, match.fourthQuote, match.postfix)
 		}
+	}
+	return line
+}
+
+func assignmentLine(reMapKeyPair, reTfValues *regexp.Regexp, tfmaskChar, line string) string {
+	match := matchFromAssignment(reMapKeyPair, line)
+	if reTfValues.MatchString(match.property) {
+		maskedValue := maskValue(match.oldValue, tfmaskChar)
+		line = fmt.Sprintf("%v\"%v\"%v=%v\"%v\"",
+			match.leadingWhitespace,
+			match.property,
+			match.trailingWhitespaceBefore,
+			match.trailingWhitespaceAfter,
+			maskedValue)
 	}
 	return line
 }
