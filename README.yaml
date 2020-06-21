@@ -71,7 +71,7 @@ usage: |-
   The basic usage looks like this. We're going to run `terraform plan` and filter it through `tfmask`:
 
   ```sh
-  terraform plan | tfmask
+  terraform plan -no-color | tfmask
   ```
 
   ### Direnv
@@ -152,7 +152,7 @@ examples: |-
   Using `tfmask`, the output from `terraform plan` will be masked like this:
 
   ```sh
-  terraform plan | tfmask
+  terraform plan -no-color | tfmask
   ```
 
   <details>
@@ -195,7 +195,7 @@ examples: |-
   Using `tfmask`, the output from `terraform apply` will be masked like this:
 
   ```sh
-  terraform apply | tfmask
+  terraform apply -no-color | tfmask
   ```
   <details>
     <summary>Example of Masked Terraform Apply Output</summary>
