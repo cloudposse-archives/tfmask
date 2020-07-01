@@ -40,7 +40,7 @@ jobs:
           OUTPUT_PATH: ${{ github.workspace }}/release/${{ github.event.repository.name }}_*
       # Run the go tests
       - name: 'Run tests'
-        run: ${{ github.workspace }}/release/${{ github.event.repository.name }}_linux_amd64
+        run: find ${{ github.workspace }}; ${{ github.workspace }}/release/${{ github.event.repository.name }}_linux_amd64
       # Upload artifacts for this build
       - name: 'Upload artifacts'
         uses: actions/upload-artifact@v2
