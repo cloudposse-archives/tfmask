@@ -39,7 +39,7 @@ jobs:
             openbsd/amd64
           OUTPUT_PATH: ${{ github.workspace }}/release/${{ github.event.repository.name }}_*
       - name: 'Run tests'
-        run: ./${{ github.event.repository.name }}_amd64
+        run: ./release/${{ github.event.repository.name }}_amd64
       # Attach Go binaries to GitHub Release
       - name: 'Attach artifacts to GitHub Release'
         if: ${{ github.event_name == 'release' }}
