@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v2
       # Build Go binaries
       - name: 'Build Go binaries'
-        uses: cloudposse/actions/go/build@0.7.0
+        uses: cloudposse/actions/go/build@0.15.0
         env:
           GO111MODULE: on
           # Architectures to build for
