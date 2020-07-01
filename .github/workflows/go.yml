@@ -1,0 +1,48 @@
+name: 'go'
+
+on:
+  release:
+    types: [published]
+
+  pull_request: 
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repo
+      - name: 'Checkout'
+        uses: actions/checkout@v1
+      # Build Go binaries
+      - name: 'Build Go binaries'
+        uses: cloudposse/actions/go/build@0.7.0
+        env:
+          GO111MODULE: on
+          # Architectures to build for
+          GOX_OSARCH: >-
+            windows/386
+            windows/amd64
+            freebsd/arm
+            netbsd/386
+            netbsd/amd64
+            netbsd/arm
+            linux/s390x
+            linux/arm
+            darwin/386
+            darwin/amd64
+            linux/386
+            linux/amd64
+            freebsd/amd64
+            freebsd/386
+            openbsd/386
+            openbsd/amd64
+          OUTPUT_PATH: ${{ github.workspace }}/release/${{ github.event.repository.name }}_*
+
+      # Attach Go binaries to GitHub Release
+      - name: 'Attach artifacts to GitHub Release'
+        if: ${{ github.event_name == 'release' }}
+        uses: cloudposse/actions/github/release-assets@0.7.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_PATH: ${{ github.workspace }}/release/${{ github.event.repository.name }}_*
