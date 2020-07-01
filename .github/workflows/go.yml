@@ -13,7 +13,7 @@ jobs:
     steps:
       # Checkout the repo
       - name: 'Checkout'
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
       # Build Go binaries
       - name: 'Build Go binaries'
         uses: cloudposse/actions/go/build@0.7.0
