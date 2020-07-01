@@ -50,7 +50,7 @@ jobs:
       # Attach Go binaries to GitHub Release
       - name: 'Attach artifacts to GitHub Release'
         if: ${{ github.event_name == 'release' }}
-        uses: cloudposse/actions/github/release-assets@0.7.0
+        uses: cloudposse/actions/github/release-assets@0.15.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           INPUT_PATH: ${{ github.workspace }}/release/${{ github.event.repository.name }}_*
