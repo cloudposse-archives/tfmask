@@ -144,9 +144,29 @@ func getCurrentResource(expression expression, currentResource, line string) str
 	return currentResource
 }
 
+func stripAnsi(str string) string {
+	const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
+	re := regexp.MustCompile(ansi)
+	return re.ReplaceAllString(str, "")
+}
+
+func difference(a, b []string) (diff []string) {
+	for i, v := range a {
+		if v != b[i] {
+			diff = append(diff, v)
+		}
+	}
+	return diff
+}
+
 func processLine(expression expression, reTfResource,
 	reTfValues *regexp.Regexp, tfmaskChar, currentResource,
 	line string) string {
+
+	originalLine := line
+	// remove ansi codes
+	line = stripAnsi(line)
+	// process without ansi codes
 	if expression.planStatusRegex.MatchString(line) {
 		line = planStatus(expression.planStatusRegex, reTfResource, tfmaskChar,
 			line)
@@ -158,6 +178,19 @@ func processLine(expression expression, reTfResource,
 		line = assignmentLine(expression.reMapKeyPair, reTfValues,
 			tfmaskChar, line)
 	}
+	// compare original line with processed
+	if strings.Compare(stripAnsi(originalLine), line) == 0 {
+		// there were no secrets - return original line with ansi codes
+		line = originalLine
+	} else {
+		// find difference between original line(without ansi codes) and processed line(with masked secret)
+		diff := difference(strings.Split(stripAnsi(originalLine), ""), strings.Split(line, ""))
+		// this difference is a secret value
+		secret := strings.Join(diff, "")
+		// replace secret value in original line (with ansi codes) with asterisk
+		line = strings.Replace(originalLine, secret, strings.Repeat("*", len(secret)), 1)
+	}
+	// return line with ansi codes
 	return line
 }
 
