@@ -25,11 +25,11 @@ type match struct {
 }
 
 type keyValueMatch struct {
-	leadingWhitespace        string
-	property                 string
-	trailingWhitespaceBefore string
-	trailingWhitespaceAfter  string
-	oldValue                 string
+	leadingWhitespace       string
+	property                string
+	assignmentOperator      string
+	trailingWhitespaceAfter string
+	oldValue                string
 }
 
 type expression struct {
@@ -68,7 +68,7 @@ var versionedExpressions = map[string]expression{
 			"^([~/+-]+) (.*?) +(.*)$",
 		),
 		reMapKeyPair: regexp.MustCompile(
-			"(?i)^(\\s+(?:[~+-] )?)\"(.*)\"(\\s+)=(\\s+)\"(.*)\"$",
+			"(?i)^(\\s+(?:[~+-] )?)(.*)(\\s?[=:])(\\s+)\"(.*)\"$",
 		),
 		resourceIndex: 2,
 		assign:        ":",
@@ -85,7 +85,7 @@ var versionedExpressions = map[string]expression{
 			"^([~/+-]+) (.*?) +(.*) (.*) (.*)$",
 		),
 		reMapKeyPair: regexp.MustCompile(
-			"(?i)^(\\s+(?:[~+-] )?)\"(.*)\"(\\s+)=(\\s+)\"(.*)\"$",
+			"(?i)^(\\s+(?:[~+-] )?)(.*)(\\s=)(\\s+)\"(.*)\"$",
 		),
 		resourceIndex: 3,
 		assign:        "=",
@@ -192,11 +192,11 @@ func matchFromLine(reTfPlanLine *regexp.Regexp, line string) match {
 func matchFromAssignment(reMapKeyPair *regexp.Regexp, line string) keyValueMatch {
 	subMatch := reMapKeyPair.FindStringSubmatch(line)
 	return keyValueMatch{
-		leadingWhitespace:        subMatch[1],
-		property:                 subMatch[2],
-		trailingWhitespaceBefore: subMatch[3],
-		trailingWhitespaceAfter:  subMatch[4],
-		oldValue:                 subMatch[5],
+		leadingWhitespace:       subMatch[1],
+		property:                subMatch[2],
+		assignmentOperator:      subMatch[3],
+		trailingWhitespaceAfter: subMatch[4],
+		oldValue:                subMatch[5],
 	}
 }
 
@@ -222,10 +222,10 @@ func assignmentLine(reMapKeyPair, reTfValues *regexp.Regexp, tfmaskChar, line st
 	match := matchFromAssignment(reMapKeyPair, line)
 	if reTfValues.MatchString(match.property) {
 		maskedValue := maskValue(match.oldValue, tfmaskChar)
-		line = fmt.Sprintf("%v\"%v\"%v=%v\"%v\"",
+		line = fmt.Sprintf("%v%v%v%v\"%v\"",
 			match.leadingWhitespace,
 			match.property,
-			match.trailingWhitespaceBefore,
+			match.assignmentOperator,
 			match.trailingWhitespaceAfter,
 			maskedValue)
 	}
