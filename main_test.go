@@ -175,14 +175,24 @@ var assignmentTests = []struct {
 }{
 	// tf 0.11 ------------------------------------
 	{
-		" + client_secret: \"super secret secret\"",
-		" + client_secret: \"*******************\"",
+		" + client_secret: \"123456\"",
+		" + client_secret: \"******\"",
+		"0.11",
+	},
+	{
+		" + client_secret = \"123456\"",
+		" + client_secret = \"******\"",
 		"0.11",
 	},
 	// tf 0.12 ------------------------------------
 	{
 		" + \"foo_secret\" = \"123456\"",
 		" + \"foo_secret\" = \"******\"",
+		"0.12",
+	},
+	{
+		" + foo_secret = \"123456\"",
+		" + foo_secret = \"******\"",
 		"0.12",
 	},
 	{
