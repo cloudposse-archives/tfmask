@@ -221,7 +221,7 @@ func TestAssignmentLine(t *testing.T) {
 	// Character used to mask sensitive output
 	var tfmaskChar = "*"
 	// Pattern representing sensitive output
-	var tfmaskValuesRegex = "(?i)^.*(oauth|secret|token|password|key|result|id).*$"
+	var tfmaskValuesRegex = "(?i)^.*[^a-zA-Z](oauth|secret|token|password|key|result|id).*$"
 	reTfValues := regexp.MustCompile(tfmaskValuesRegex)
 
 	for _, assignmentTest := range assignmentTests {
