@@ -173,10 +173,26 @@ var assignmentTests = []struct {
 	expectedResult string
 	minorVersion   string
 }{
+	// tf 0.11 ------------------------------------
+	{
+		" + client_secret: \"123456\"",
+		" + client_secret: \"******\"",
+		"0.11",
+	},
+	{
+		" + client_secret = \"123456\"",
+		" + client_secret = \"******\"",
+		"0.11",
+	},
 	// tf 0.12 ------------------------------------
 	{
 		" + \"foo_secret\" = \"123456\"",
 		" + \"foo_secret\" = \"******\"",
+		"0.12",
+	},
+	{
+		" + foo_secret = \"123456\"",
+		" + foo_secret = \"******\"",
 		"0.12",
 	},
 	{
@@ -205,7 +221,7 @@ func TestAssignmentLine(t *testing.T) {
 	// Character used to mask sensitive output
 	var tfmaskChar = "*"
 	// Pattern representing sensitive output
-	var tfmaskValuesRegex = "(?i)^.*(oauth|secret|token|password|key|result|id).*$"
+	var tfmaskValuesRegex = "(?i)^.*[^a-zA-Z](oauth|secret|token|password|key|result|id).*$"
 	reTfValues := regexp.MustCompile(tfmaskValuesRegex)
 
 	for _, assignmentTest := range assignmentTests {
