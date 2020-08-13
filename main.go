@@ -89,7 +89,7 @@ var versionedExpressions = map[string]expression{
 			"^([~/+-]+) (.*?) +(.*) (.*) (.*)$",
 		),
 		reMapKeyPair: regexp.MustCompile(
-			`(?i)^(\s+(?:[~+-] )?)"(.*)"(\s+)=(\s+)"(.*)"$`,
+			`(?i)^(\s+(?:[~+-] )?)(.*)(\s=)(\s+)"(.*)"$`,
 		),
 		reJSON: regexp.MustCompile(
 			`(?i)^(\s+(?:[~+-] )?)"?(.*?)"?(\s+)=(\s+)"(.+?)"(\s+->\s+"(.+)")?\s*$`,
