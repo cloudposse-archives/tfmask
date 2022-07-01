@@ -108,9 +108,16 @@ func main() {
 	// Default to tf 0.12, but users can override
 	var tfenv = getEnv("TFENV", "0.12")
 
+	defaultBufferSize := make([]byte, 4096)
+
+	// The default size is 64 * 1024: https://pkg.go.dev/bufio#pkg-constants
+	// Set it to 10 times the default MaxScanTokenSize
+	maxBufferSize := bufio.MaxScanTokenSize * 10
+
 	reTfValues := regexp.MustCompile(tfmaskValuesRegex)
 	reTfResource := regexp.MustCompile(tfmaskResourceRegex)
 	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Buffer(defaultBufferSize, maxBufferSize)
 	versionedExpressions := versionedExpressions[tfenv]
 	// initialize currentResource once before scanning
 	currentResource := ""
