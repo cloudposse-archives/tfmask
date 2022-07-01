@@ -48,6 +48,9 @@ var lineTests = []struct {
 	{"", "random_string.some_password: Creation complete after 0s [id=5s80SMs@JJpA8e/h]",
 		"random_string.some_password: Creation complete after 0s [id=****************]",
 		"0.12"},
+	{"", "      + token       = \"abC123ABc\"",
+		"      + token       = \"*********\" ",
+		"0.12"},
 }
 
 func TestProcessLine(t *testing.T) {
