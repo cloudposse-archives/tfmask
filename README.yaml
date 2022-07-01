@@ -66,12 +66,10 @@ usage: |-
   | `TFMASK_VALUES_REGEX`    | Regular expression used to match values        | [see code] | 
   | `TFMASK_RESOURCES_REGEX` | Regular expression used to match resources     | [see code] |
 
-  __IMPORTANT__: Pass `-no-color` to `terraform plan` and `terraform apply` for proper parsing
-  
   The basic usage looks like this. We're going to run `terraform plan` and filter it through `tfmask`:
 
   ```sh
-  terraform plan -no-color | tfmask
+  terraform plan | tfmask
   ```
 
   ### Direnv
@@ -152,7 +150,7 @@ examples: |-
   Using `tfmask`, the output from `terraform plan` will be masked like this:
 
   ```sh
-  terraform plan -no-color | tfmask
+  terraform plan | tfmask
   ```
 
   <details>
@@ -195,7 +193,7 @@ examples: |-
   Using `tfmask`, the output from `terraform apply` will be masked like this:
 
   ```sh
-  terraform apply -no-color | tfmask
+  terraform apply | tfmask
   ```
   <details>
     <summary>Example of Masked Terraform Apply Output</summary>

@@ -1,3 +1,3 @@
-module github.com/cloudposse/tfmask
+module github.com/cogniflare/tfmask
 
 go 1.13
