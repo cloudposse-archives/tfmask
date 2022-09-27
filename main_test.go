@@ -1,6 +1,12 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -71,6 +77,95 @@ func TestProcessLine(t *testing.T) {
 		expectedResult := lineTest.expectedResult
 		if result != expectedResult {
 			t.Errorf("Got %s, want %s", result, expectedResult)
+		}
+	}
+}
+
+func TestRulesParsing(t *testing.T) {
+	rulesStr := `
+rules:
+- begin: "BEGIN"
+  end: "END"
+  value: "[\\S]{1}"
+`
+	rules, err := parseRules([]byte(rulesStr))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(rules) != 1 {
+		t.Fatalf("expected 1 rules found %v", len(rules))
+	}
+
+	exp := multiLineRule{
+		BeginLineReg: "BEGIN",
+		EndLineReg:   "END",
+		ValReg:       "[\\S]{1}",
+	}
+
+	if rules[0] != exp {
+		t.Fatalf("expected %v but received %v", exp, rules[0])
+	}
+}
+
+func TestProcessFile(t *testing.T) {
+	fs, err := ioutil.ReadDir("tests/cases")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, f := range fs {
+		if f.IsDir() {
+			continue
+		}
+		filename := f.Name()
+
+		if filepath.Ext(filename) == ".in" {
+			outFname := strings.ReplaceAll(filename, ".in", ".out")
+
+			in, err := os.Open(filepath.Join("tests/cases", filename))
+			if err != nil {
+				t.Fatal(err)
+			}
+			outCheck, err := os.Open(filepath.Join("tests/cases", outFname))
+			if err != nil {
+				t.Fatal(err)
+			}
+			out := &bytes.Buffer{}
+			cfg := getConfig()
+			cfg.valuesRegex = "(?i)^.*[^a-zA-Z](oauth|secret|certificate|token|password|key|result).*$"
+			processFile(cfg, in, out, os.Stderr)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			expResultBuffer := bufio.NewReader(outCheck)
+			resultBuffer := bufio.NewReader(out)
+			for {
+				line, _, err1 := resultBuffer.ReadLine()
+				expLine, _, err2 := expResultBuffer.ReadLine()
+				if err1 == err2 && err1 == io.EOF {
+					break
+				}
+				if err != nil {
+					t.Fatal(err1)
+				}
+				if err != nil {
+					t.Fatal(err2)
+				}
+				lineStr := string(line)
+				expLineStr := string(expLine)
+
+				if lineStr != expLineStr {
+					t.Errorf("test %s failed", filename)
+					t.Error("expected line:")
+					t.Error(expLineStr)
+					t.Error("but received:")
+					t.Error(lineStr)
+				}
+
+			}
+
 		}
 	}
 }

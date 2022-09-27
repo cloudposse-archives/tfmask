@@ -1,0 +1,29 @@
+  # module.k8s_clusters.vault_kubernetes_auth_backend_config.k8s_clusters["dev"] will be created
++ resource "vault_kubernetes_auth_backend_config" "k8s_clusters" {
+    + backend                = (known after apply)
+    + disable_iss_validation = true
+    + disable_local_ca_jwt   = (known after apply)
+    + id                     = (known after apply)
+    + issuer                 = "api"
+    + kubernetes_ca_cert     = <<-EOT
+          -----BEGIN CERTIFICATE-----
+            9b0194129108e8f860f4a58149b0194129108e8f860f4a5814w0BAQsFADAVMRM
+            cm5ldGVzMB4XDTIxMDgwOTE4NTYxM1oXDTMxMDgwNzE4NTYxM1owFTETMBEGA1UE
+            AxMKa3ViZXJuZXRlczCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKuv
+            xz/WXGZtgnXx73S+n/C9b0194129108e8f860f4a5814RlJjY9u5uDqok1qWOyTM
+            sRsq4N45l69abnvmJZnlfHpqcQE09d+xi4qe5vc2mODDfL/ZVwczav0uGjyACEOa
+            9r88lpxJNIqyOrhbH6Dg3g53FgMefcOe88HC4WmRwppoIS7n7mXaUdzoxNtJRT2P
+            TYcjTbuJDj5xXJFFmGrrbgXWAj7pWl95zD0PIhhNA1XR4byvnPbrXWADgJH2wXZx
+            /fX9XR5BJsL8QKsmM4nibyxpLScu7i6FsrGJC4F/V+D7QGaTMmCtci0LBErUpQ1A
+            bdBqjFsf/oYd2x9b0194129108e8f860f4a5814H/BA9b0194129108GA1UdEwEB
+            /wQFMAMBAf8wHQYDVR0OBBYEFHfMZWhbqNN9wqeLVIIuGCMpaEUWMA0GCSqGSIb3
+            DQEBCwUAA4IBAQCpiJ9I7skg6psY3Wo8gyLPc0tDhpHs6+L7p+fBJMREqlJ1vgbX
+            4Pm2m770xXJSTvMbl45Y/RNT3B4CvNCqNt7mULQ9AkLmqSQaK28LRxsk+ZYaMwkY
+            oRKxNhHbpuwp/WaHayAwnh3eGmL+VJJAKXhNPUO3vc9b0194129108e8f860f4a5
+            KPnhFdWBL34hHd1VajGemqonDSn5zj8LyI4V944yeBuRt6g3j6MlvLmpW/NnTtFQ
+            22kVhlkD5kjBtkIl1dReg+OHtTZ77tHAmknxwo8m6luxiZsMX/LfjlfAfOJWwQKL
+            LD4U2hwN1bY36h5C3Djc9mXdc0Q1ghjK96vZ
+          -----END CERTIFICATE-----
+        EOT
+    + kubernetes_host        = "https://1.1.1.1"
+    }
