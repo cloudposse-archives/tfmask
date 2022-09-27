@@ -2,13 +2,18 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
 	"runtime"
 	"strings"
 	"unicode/utf8"
+
+	"gopkg.in/yaml.v3"
 )
 
 type match struct {
@@ -93,39 +98,69 @@ var versionedExpressions = map[string]expression{
 	},
 }
 
+type multiLineRule struct {
+	BeginLineReg string `yaml:"begin"`
+	EndLineReg   string `yaml:"end"`
+	ValReg       string `yaml:"value"`
+}
+
+type config struct {
+	maskChar       string
+	valuesRegex    string
+	resourceRegex  string
+	env            string
+	multilineRules []multiLineRule
+}
+
+func parseRules(data []byte) ([]multiLineRule, error) {
+	var rules = struct {
+		Rules []multiLineRule `yaml:"rules"`
+	}{}
+	err := yaml.Unmarshal(data, &rules)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse yaml: %w", err)
+	}
+
+	return rules.Rules, nil
+}
+
+func getConfig() config {
+	cfg := config{}
+	// Character used to mask sensitive output
+	cfg.maskChar = getEnv("TFMASK_CHAR", "*")
+	// Pattern representing sensitive output
+	cfg.valuesRegex = getEnv("TFMASK_VALUES_REGEX",
+		"(?i)^.*[^a-zA-Z](oauth|secret|token|password|key|result|id).*$")
+	// Pattern representing sensitive resource
+	cfg.resourceRegex = getEnv("TFMASK_RESOURCES_REGEX",
+		"(?i)^(random_id|random_string).*$")
+
+	cfg.multilineRules = []multiLineRule{
+		{"BEGIN", "END", "[\\S]{1}"},
+	}
+
+	cfgPath := getEnv("TFMASK_RULES_PATH", "")
+	if _, err := os.Stat(cfgPath); err == nil {
+		data, err := ioutil.ReadFile(cfgPath)
+		if err != nil {
+			fmt.Printf("failed to read rules file: %v", err)
+		}
+		rules, err := parseRules(data)
+		if err != nil {
+			fmt.Printf("failed to parse rules: %v", err)
+		}
+		cfg.multilineRules = rules
+	}
+
+	// Default to tf 0.12, but users can override
+	cfg.env = getEnv("TFENV", "0.12")
+	return cfg
+}
+
 func main() {
 	log.SetFlags(0) // no timestamps on our logs
 
-	// Character used to mask sensitive output
-	var tfmaskChar = getEnv("TFMASK_CHAR", "*")
-	// Pattern representing sensitive output
-	var tfmaskValuesRegex = getEnv("TFMASK_VALUES_REGEX",
-		"(?i)^.*[^a-zA-Z](oauth|secret|token|password|key|result|id).*$")
-	// Pattern representing sensitive resource
-	var tfmaskResourceRegex = getEnv("TFMASK_RESOURCES_REGEX",
-		"(?i)^(random_id|random_string).*$")
-
-	// Default to tf 0.12, but users can override
-	var tfenv = getEnv("TFENV", "0.12")
-
-	reTfValues := regexp.MustCompile(tfmaskValuesRegex)
-	reTfResource := regexp.MustCompile(tfmaskResourceRegex)
-	scanner := bufio.NewScanner(os.Stdin)
-	versionedExpressions := versionedExpressions[tfenv]
-	// initialize currentResource once before scanning
-	currentResource := ""
-	for scanner.Scan() {
-		line := scanner.Text()
-		currentResource = getCurrentResource(versionedExpressions,
-			currentResource, line)
-		fmt.Println(processLine(versionedExpressions, reTfResource, reTfValues,
-			tfmaskChar, currentResource, line))
-	}
-
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "error:", err)
-		os.Exit(1)
-	}
+	processFile(getConfig(), os.Stdin, os.Stdout, os.Stderr)
 }
 
 func getCurrentResource(expression expression, currentResource, line string) string {
@@ -142,6 +177,75 @@ func getCurrentResource(expression expression, currentResource, line string) str
 	}
 
 	return currentResource
+}
+
+func processByLine(cfg config, in io.Reader, out io.Writer, er io.Writer) {
+	reTfValues := regexp.MustCompile(cfg.valuesRegex)
+	reTfResource := regexp.MustCompile(cfg.resourceRegex)
+	scanner := bufio.NewScanner(in)
+	versionedExpressions := versionedExpressions[cfg.env]
+	// initialize currentResource once before scanning
+	currentResource := ""
+	for scanner.Scan() {
+		line := scanner.Text()
+		currentResource = getCurrentResource(versionedExpressions,
+			currentResource, line)
+		fmt.Fprintln(out, processLine(versionedExpressions, reTfResource, reTfValues,
+			cfg.maskChar, currentResource, line))
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(er, "error:", err)
+		os.Exit(1)
+	}
+}
+
+func processFile(cfg config, in io.Reader, out io.Writer, er io.Writer) {
+	tempOut := &bytes.Buffer{}
+	processByLine(cfg, in, tempOut, er)
+
+	for _, rule := range cfg.multilineRules {
+		beginRegex := regexp.MustCompile(rule.BeginLineReg)
+		endRegex := regexp.MustCompile(rule.EndLineReg)
+		valRegex := regexp.MustCompile(rule.ValReg)
+
+		ruleOut := &bytes.Buffer{}
+		reader := bufio.NewReader(tempOut)
+		replacingMode := false
+		for {
+
+			line, _, err := reader.ReadLine()
+			if err == io.EOF {
+				break
+			}
+
+			if err != nil {
+				fmt.Fprintln(er, "error:", err)
+				os.Exit(1)
+			}
+
+			if replacingMode {
+				if endRegex.Match(line) {
+					fmt.Fprintf(ruleOut, "%s\n", line)
+
+					replacingMode = false
+					continue
+				}
+				newLine := valRegex.ReplaceAll(line, []byte(cfg.maskChar))
+				fmt.Fprintf(ruleOut, "%s\n", newLine)
+
+			} else {
+				fmt.Fprintf(ruleOut, "%s\n", line)
+
+				if beginRegex.Match(line) {
+					replacingMode = true
+					continue
+				}
+			}
+		}
+		tempOut = ruleOut
+	}
+	io.Copy(out, tempOut)
 }
 
 func processLine(expression expression, reTfResource,
